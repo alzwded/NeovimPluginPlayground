@@ -1,0 +1,165 @@
+*term-manager.txt*    Terminal Manager Plugin for Neovim
+
+CONTENTS                                                    *term-manager-contents*
+
+1. Introduction                                          |term-manager-introduction|
+2. Installation                                          |term-manager-installation|
+3. Configuration                                         |term-manager-configuration|
+4. Commands                                              |term-manager-commands|
+5. Lua API                                               |term-manager-api|
+6. Examples                                              |term-manager-examples|
+
+==============================================================================
+1. INTRODUCTION                                         *term-manager-introduction*
+
+Terminal Manager is a Neovim plugin that provides programmatic control over
+a persistent terminal session. It allows you to:
+
+- Maintain a single terminal session across plugin calls
+- Send text and control characters to the terminal
+- Read the current visible screen contents
+- Manage terminal window visibility
+
+==============================================================================
+2. INSTALLATION                                         *term-manager-installation*
+
+Using lazy.nvim: >
+    {
+      "your-username/nvimterm",
+      config = function()
+        require("term-manager").setup()
+      end
+    }
+<
+
+Using packer.nvim: >
+    use {
+      "your-username/nvimterm",
+      config = function()
+        require("term-manager").setup()
+      end
+    }
+<
+
+==============================================================================
+3. CONFIGURATION                                        *term-manager-configuration*
+
+Configure the plugin by calling setup() with options: >
+
+    require('term-manager').setup({
+      height = 20,        -- Terminal window height
+      position = 'bottom' -- Terminal position
+    })
+<
+
+Options:
+  height    (number) Height of terminal window (default: 15)
+  position  (string) Position of terminal (default: 'bottom')
+
+==============================================================================
+4. COMMANDS                                             *term-manager-commands*
+
+                                                        *:TermManagerShow*
+:TermManagerShow        Show the terminal panel
+
+                                                        *:TermManagerRead*
+:TermManagerRead        Print current screen contents to messages
+
+                                                        *:TermManagerWrite*
+:TermManagerWrite {text}    Send text to the terminal
+
+==============================================================================
+5. LUA API                                              *term-manager-api*
+
+require('term-manager')                                 *term-manager.setup()*
+.setup({opts})          Initialize plugin with configuration options
+
+                                                        *term-manager.show()*
+.show()                 Show terminal panel and return window number
+
+                                                        *term-manager.hide()*
+.hide()                 Hide terminal panel
+
+                                                        *term-manager.toggle()*
+.toggle()               Toggle terminal panel visibility
+
+                                                        *term-manager.write()*
+.write({data})          Send data to terminal
+                        {data} can be:
+                        - string: sent directly
+                        - table: array of strings/numbers sent in sequence
+                        - number: converted to character and sent
+
+                                                        *term-manager.read_screen()*
+.read_screen()          Read current visible screen contents
+                        Returns table with:
+                        - lines: array of visible lines
+                        - dimensions: {height, width}
+                        - cursor_pos: {row, col}
+
+                                                        *term-manager.get_cursor_position()*
+.get_cursor_position()  Get terminal cursor position
+                        Returns {row, col} or nil
+
+                                                        *term-manager.keys*
+.keys                   Table of control character constants:
+                        - CTRL_C, CTRL_D, CTRL_Z
+                        - ESC, ENTER, TAB
+                        - BACKSPACE, DELETE
+
+                                                        *term-manager.ctrl_key()*
+.ctrl_key({char})       Generate control key combination
+                        Example: ctrl_key('a') returns Ctrl+A
+
+                                                        *term-manager.alt_key()*
+.alt_key({char})        Generate Alt/Meta key combination
+                        Example: alt_key('f') returns Alt+F
+
+==============================================================================
+6. EXAMPLES                                             *term-manager-examples*
+
+Basic usage: >
+    local term = require('term-manager')
+    
+    term.show()
+    term.write('echo "Hello, World!"\n')
+    
+    vim.defer_fn(function()
+      local screen = term.read_screen()
+      print(vim.inspect(screen.lines))
+    end, 100)
+<
+
+Send control characters: >
+    local term = require('term-manager')
+    
+    term.write(term.keys.CTRL_C)     -- Send Ctrl+C
+    term.write(term.alt_key('f'))    -- Send Alt+F
+    term.write(term.ctrl_key('a'))   -- Send Ctrl+A
+<
+
+Automated interaction: >
+    local term = require('term-manager')
+    
+    -- Start Python REPL
+    term.show()
+    term.write('python\n')
+    
+    -- Send Python code after delay
+    vim.defer_fn(function()
+      term.write('2 + 2\n')
+      
+      -- Check output
+      vim.defer_fn(function()
+        local screen = term.read_screen()
+        for _, line in ipairs(screen.lines) do
+          if line:match('4') then
+            print("Math works!")
+          end
+        end
+      end, 100)
+    end, 500)
+<
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
